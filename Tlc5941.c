@@ -36,6 +36,7 @@ void Tlc5941_Init(void) {
 	SPSR = (1 << SPI2X);
 	
 	// Set timer for grayscale value transmission
+	#if Tlc5941_TIMER == 0
 	// CTC with OCR0A as TOP
 	TCCR0A = (1 << WGM01);
 	// clk_io/1024 (From prescaler)
@@ -44,6 +45,16 @@ void Tlc5941_Init(void) {
 	OCR0A = 3;
 	// Enable Timer/Counter0 Compare Match A interrupt
 	TIMSK0 |= (1 << OCIE0A);
+	#elif Tlc5941_TIMER == 2
+	// CTC with OCR0A as TOP
+	TCCR2A = (1 << WGM21);
+	// clk_io/1024 (From prescaler)
+	TCCR2B = ((1 << CS22) | (1 << CS21)| (1 << CS20));
+	// Generate an interrupt every 4096 clock cycles
+	OCR2A = 3;
+	// Enable Timer/Counter0 Compare Match A interrupt
+	TIMSK2 |= (1 << OCIE2A);
+	#endif
 }
 
 void Tlc5941_SetAllGS(uint16_t value) {
@@ -61,7 +72,7 @@ void Tlc5941_SetAllGS(uint16_t value) {
 void Tlc5941_SetGS(Tlc5941_channel_t channel, uint16_t value) {
 	// Sets the grayscale value of a particular channel
 	channel = Tlc5941_numChannels - 1 - channel;
-	uint16_t i = (uint16_t)channel * 3 / 2;
+	Tlc5941_channel3_t i = (Tlc5941_channel3_t)channel * 3 / 2;
 	switch (channel % 2) {
 		case 0:
 			Tlc5941_gsData[i] = (value >> 4);
@@ -110,7 +121,7 @@ void Tlc5941_SetAllDC(uint8_t value) {
 void Tlc5941_SetDC(Tlc5941_channel_t channel, uint8_t value) {
 	// Sets the dot correction value of a particular channel
 	channel = Tlc5941_numChannels - 1 - channel;
-	uint16_t i = (uint16_t)channel * 3 / 4;
+	Tlc5941_channel_t i = (Tlc5941_channel3_t)channel * 3 / 4;
 	switch (channel % 4) {
 		case 0:
 			Tlc5941_dcData[i] = (Tlc5941_dcData[i] & 0x03) | (uint8_t)(value << 2);
@@ -132,7 +143,11 @@ void Tlc5941_SetDC(Tlc5941_channel_t channel, uint8_t value) {
 }
 #endif // #if (Tlc5941_MANUAL_DC_FUNCS)
 
+#if Tlc5941_TIMER == 0
 ISR(TIMER0_COMPA_vect) {
+#elif Tlc5941_TIMER == 2
+ISR(TIMER2_COMPA_vect) {
+#endif
 	static uint8_t xlatNeedsPulse = 0;
 	
 	// Make the TLC load new values

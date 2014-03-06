@@ -1,5 +1,5 @@
 /*
- * tlc5941.h
+ * Tlc5941.h
  *
  * Created: 03/03/2014 02:29:05 PM
  *  Author: Sebastian Castillo
@@ -82,6 +82,13 @@
 #define Tlc5941_N 1
 #endif
 
+// Timer to use, currently only supports Timer0 and 2
+#ifndef Tlc5941_TIMER
+#define Tlc5941_TIMER 0
+#elif Tlc5941_TIMER != 2 && Tlc5941_TIMER != 0
+#error Tlc5941 library: Only Timer0 and Timer2 supported.
+#endif
+
 // Convenience functions
 #define Tlc5941_setOutput(ddr, pin) ((ddr) |= (1 << (pin)))
 #define Tlc5941_setLow(port, pin) ((port) &= ~(1 << (pin)))
@@ -113,6 +120,13 @@
 #define Tlc5941_channel_t uint8_t
 #endif
 #define Tlc5941_numChannels ((Tlc5941_channel_t)16 * Tlc5941_N)
+
+// Datatype definition
+#if (3 * 16 * TLC5940_N > 255)
+#define Tlc5941_channel3_t uint16_t
+#else
+#define Tlc5941_channel3_t uint8_t
+#endif
 
 // Data structures that store the dot-correction and grayscale values
 extern uint8_t Tlc5941_dcData[Tlc5941_dcDataSize];
