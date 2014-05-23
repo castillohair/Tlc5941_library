@@ -31,9 +31,19 @@ void Tlc5941_Init(void) {
 	Tlc5941_setHigh(Tlc5941_BLANK_PORT, Tlc5941_BLANK_PIN);
 	
 	// SPI configuration
-	// Enable SPI, Master, set clock rate fck/2
-	SPCR = (1 << SPE) | (1 << MSTR);
-	SPSR = (1 << SPI2X);
+	#if Tlc5941_USART_SPI == 0 // Use SPI module
+		// Enable SPI, Master, set clock rate fosc/2
+		SPCR = (1 << SPE) | (1 << MSTR);
+		SPSR = (1 << SPI2X);
+	#else // Use USART in SPI mode
+		UBRR0 = 0;
+		// Set MSPI mode of operation
+		UCSR0C = (1<<UMSEL01)|(1<<UMSEL00);
+		// Enable transmitter
+		UCSR0B = (1<<TXEN0);
+		// Set baud rate fosc/2
+		UBRR0 = 0;
+	#endif
 	
 	// Set timer for grayscale value transmission
 	#if Tlc5941_TIMER == 0
@@ -94,10 +104,17 @@ void Tlc5941_ClockInDC(void) {
 
 	// Perform data transmission
 	for (Tlc5941_dcData_t i = 0; i < Tlc5941_dcDataSize; i++) {
-		// Start transmission
-		SPDR = Tlc5941_dcData[i];
-		// Wait for transmission complete
-		while (!(SPSR & (1 << SPIF)));
+		#if Tlc5941_USART_SPI == 0 // Use SPI module
+			// Start transmission
+			SPDR = Tlc5941_dcData[i];
+			// Wait for transmission complete
+			while (!(SPSR & (1 << SPIF)));
+		#else // Use USART in SPI mode
+			// Start transmission
+			UDR0 = Tlc5941_dcData[i];
+			// Wait for transmission complete
+			while (!(UCSR0A & (1 << UDRE0)));
+		#endif
 	}
 	Tlc5941_pulse(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
 }
@@ -172,8 +189,13 @@ ISR(TIMER2_COMPA_vect) {
 	if (Tlc5941_gsUpdateFlag) {
 		// Below this we have 4096 cycles to shift in the data for the next cycle
 		for (Tlc5941_gsData_t i = 0; i < Tlc5941_gsDataSize; i++) {
-			SPDR = Tlc5941_gsData[i];
-			while (!(SPSR & (1 << SPIF)));
+			#if Tlc5941_USART_SPI == 0 // Use SPI module
+				SPDR = Tlc5941_gsData[i];
+				while (!(SPSR & (1 << SPIF)));
+			#else // Use USART in SPI mode
+				UDR0 = Tlc5941_gsData[i];
+				while (!(UCSR0A & (1 << UDRE0)));
+			#endif
 		}
 		xlatNeedsPulse = 1;
 		Tlc5941_gsUpdateFlag = 0;

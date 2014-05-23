@@ -72,6 +72,11 @@
 #define Tlc5941_XLAT_PIN PB1
 #endif
 
+// Use USART in SPI mode?
+#ifndef Tlc5941_USART_SPI
+#define Tlc5941_USART_SPI 0
+#endif
+
 // Use DC functions?
 #ifndef Tlc5941_MANUAL_DC_FUNCS
 #define Tlc5941_MANUAL_DC_FUNCS 0
