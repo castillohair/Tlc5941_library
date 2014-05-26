@@ -82,6 +82,11 @@
 #define Tlc5941_MANUAL_DC_FUNCS 0
 #endif
 
+// Grayscale backup?
+#ifndef Tlc5941_GS_BACKUP
+#define Tlc5941_GS_BACKUP 0
+#endif
+
 // Number of TLCs
 #ifndef Tlc5941_N
 #define Tlc5941_N 1
@@ -136,6 +141,9 @@
 // Data structures that store the dot-correction and grayscale values
 extern uint8_t Tlc5941_dcData[Tlc5941_dcDataSize];
 extern uint8_t Tlc5941_gsData[Tlc5941_gsDataSize];
+#if Tlc5941_GS_BACKUP
+	extern uint8_t Tlc5941_gsDataBackup[Tlc5941_gsDataSize];
+#endif
 
 // Flag that indicates if grayscale values should be sent in the next ISR execution.
 extern volatile uint8_t Tlc5941_gsUpdateFlag;
@@ -149,6 +157,10 @@ static inline void Tlc5941_SetGSUpdateFlag(void) {
 void Tlc5941_Init(void);
 void Tlc5941_SetGS(Tlc5941_channel_t channel, uint16_t value);
 void Tlc5941_SetAllGS(uint16_t value);
+#if Tlc5941_GS_BACKUP
+void Tlc5941_BackupGS();
+void Tlc5941_RestoreGS();
+#endif
 
 #if (Tlc5941_MANUAL_DC_FUNCS)
 void Tlc5941_ClockInDC(void);

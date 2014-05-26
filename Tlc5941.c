@@ -13,6 +13,9 @@
 uint8_t Tlc5941_dcData[Tlc5941_dcDataSize];
 uint8_t Tlc5941_gsData[Tlc5941_gsDataSize];
 volatile uint8_t Tlc5941_gsUpdateFlag;
+#if Tlc5941_GS_BACKUP
+uint8_t Tlc5941_gsDataBackup[Tlc5941_gsDataSize];
+#endif
 
 void Tlc5941_Init(void) {
 	// Define direction of pins
@@ -78,6 +81,24 @@ void Tlc5941_SetAllGS(uint16_t value) {
 		Tlc5941_gsData[i++] = (uint8_t)value; // bits: 07 06 05 04 03 02 01 00
 	} while (i < Tlc5941_gsDataSize);
 }
+
+#if Tlc5941_GS_BACKUP
+
+void Tlc5941_BackupGS() {
+	for (Tlc5941_gsData_t i = 0; i < Tlc5941_gsDataSize; i++)
+	{
+		Tlc5941_gsDataBackup[i] = Tlc5941_gsData[i];
+	}
+}
+
+void Tlc5941_RestoreGS() {
+	for (Tlc5941_gsData_t i = 0; i < Tlc5941_gsDataSize; i++)
+	{
+		Tlc5941_gsData[i] = Tlc5941_gsDataBackup[i];
+	}
+}
+
+#endif
 
 void Tlc5941_SetGS(Tlc5941_channel_t channel, uint16_t value) {
 	// Sets the grayscale value of a particular channel
