@@ -132,7 +132,7 @@
 #define Tlc5941_numChannels ((Tlc5941_channel_t)16 * Tlc5941_N)
 
 // Datatype definition
-#if (3 * 16 * TLC5940_N > 255)
+#if (3 * 16 * Tlc5941_N > 255)
 #define Tlc5941_channel3_t uint16_t
 #else
 #define Tlc5941_channel3_t uint8_t
