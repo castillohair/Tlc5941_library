@@ -5,6 +5,10 @@
  *  Author: Sebastian Castillo
  */ 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 #ifndef _TLC5941_H_
 #define _TLC5941_H_
 
@@ -169,3 +173,7 @@ void Tlc5941_SetAllDC(uint8_t value);
 #endif
 
 #endif // #ifndef _TLC5941_H_
+
+#ifdef __cplusplus
+}
+#endif
