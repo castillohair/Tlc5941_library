@@ -6,6 +6,7 @@
  */ 
 
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 #include "Tlc5941.h"
 
@@ -122,6 +123,7 @@ void Tlc5941_SetGS(Tlc5941_channel_t channel, uint16_t value) {
 void Tlc5941_ClockInDC(void) {
 	// Change programming mode
 	Tlc5941_setHigh(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
+	_delay_us (1);
 
 	// Perform data transmission
 	for (Tlc5941_dcData_t i = 0; i < Tlc5941_dcDataSize; i++) {
@@ -137,7 +139,10 @@ void Tlc5941_ClockInDC(void) {
 			while (!(UCSR0A & (1 << UDRE0)));
 		#endif
 	}
-	Tlc5941_pulse(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
+	//Tlc5941_pulse(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
+	Tlc5941_setHigh(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
+	_delay_us (10);
+	Tlc5941_setLow(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
 }
 
 void Tlc5941_SetAllDC(uint8_t value) {
