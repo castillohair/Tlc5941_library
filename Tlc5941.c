@@ -13,6 +13,7 @@
 // Variable declarations
 uint8_t Tlc5941_dcData[Tlc5941_dcDataSize];
 uint8_t Tlc5941_gsData[Tlc5941_gsDataSize];
+volatile uint8_t Tlc5941_dcUpdateFlag;
 volatile uint8_t Tlc5941_gsUpdateFlag;
 #if Tlc5941_GS_BACKUP
 uint8_t Tlc5941_gsDataBackup[Tlc5941_gsDataSize];
@@ -30,9 +31,9 @@ void Tlc5941_Init(void) {
 	// Set initial values of pins
 	Tlc5941_setLow(Tlc5941_GSCLK_PORT, Tlc5941_GSCLK_PIN);
 	Tlc5941_setLow(Tlc5941_SCLK_PORT, Tlc5941_SCLK_PIN);
-	Tlc5941_setHigh(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
+	Tlc5941_setLow(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
 	Tlc5941_setLow(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
-	Tlc5941_setHigh(Tlc5941_BLANK_PORT, Tlc5941_BLANK_PIN);
+	Tlc5941_setLow(Tlc5941_BLANK_PORT, Tlc5941_BLANK_PIN);
 	
 	// SPI configuration
 	#if Tlc5941_USART_SPI == 0 // Use SPI module
@@ -193,26 +194,49 @@ ISR(TIMER2_COMPA_vect) {
 #endif
 	static uint8_t xlatNeedsPulse = 0;
 	
-	// Make the TLC load new values
 	Tlc5941_setHigh(Tlc5941_BLANK_PORT, Tlc5941_BLANK_PIN);
 	
-	if (Tlc5941_outputState(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN)) {
-		Tlc5941_setLow(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
-		if (xlatNeedsPulse) {
-			Tlc5941_pulse(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
-			xlatNeedsPulse = 0;
-		}
-		Tlc5941_pulse(Tlc5941_SCLK_PORT, Tlc5941_SCLK_PIN);
-	} 
-	else if (xlatNeedsPulse) {
+	// Make TLC load new values
+	if (xlatNeedsPulse) {
 		Tlc5941_pulse(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
 		xlatNeedsPulse = 0;
 	}
 	
-	Tlc5941_setLow(Tlc5941_BLANK_PORT, Tlc5941_BLANK_PIN);
+	if (Tlc5941_outputState(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN)) {
+		// Dot correction mode
+		// Change to grayscale mode
+		Tlc5941_setLow(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
+		// Send one additional SPI clock signal
+		Tlc5941_pulse(Tlc5941_SCLK_PORT, Tlc5941_SCLK_PIN);
+	}
 	
-	// Send grayscale data only if gsUpdateFlag is set
-	if (Tlc5941_gsUpdateFlag) {
+	Tlc5941_setLow(Tlc5941_BLANK_PORT, Tlc5941_BLANK_PIN);
+
+	// Send dot correction data if dcUpdateFlag is set
+	if (Tlc5941_dcUpdateFlag) {
+		// Change mode to DC
+		Tlc5941_setHigh(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
+
+		// Perform data transmission
+		for (Tlc5941_dcData_t i = 0; i < Tlc5941_dcDataSize; i++) {
+			#if Tlc5941_USART_SPI == 0 // Use SPI module
+				// Start transmission
+				SPDR = Tlc5941_dcData[i];
+				// Wait for transmission complete
+				while (!(SPSR & (1 << SPIF)));
+			#else // Use USART in SPI mode
+				// Start transmission
+				UDR0 = Tlc5941_dcData[i];
+				// Wait for transmission complete
+				while (!(UCSR0A & (1 << UDRE0)));
+			#endif
+		}
+		
+		xlatNeedsPulse = 1;
+		Tlc5941_dcUpdateFlag = 0;
+	}
+	// Send grayscale data if gsUpdateFlag is set
+	else if (Tlc5941_gsUpdateFlag) {
 		// Below this we have 4096 cycles to shift in the data for the next cycle
 		for (Tlc5941_gsData_t i = 0; i < Tlc5941_gsDataSize; i++) {
 			#if Tlc5941_USART_SPI == 0 // Use SPI module

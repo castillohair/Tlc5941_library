@@ -149,10 +149,16 @@ extern uint8_t Tlc5941_gsData[Tlc5941_gsDataSize];
 	extern uint8_t Tlc5941_gsDataBackup[Tlc5941_gsDataSize];
 #endif
 
+// Flag that indicates if dot correction values should be sent in the next ISR execution.
+extern volatile uint8_t Tlc5941_dcUpdateFlag;
 // Flag that indicates if grayscale values should be sent in the next ISR execution.
 extern volatile uint8_t Tlc5941_gsUpdateFlag;
 
-// Safely sets the update flag
+// Safely sets update flags
+static inline void Tlc5941_SetDCUpdateFlag(void) {
+	__asm__ volatile ("" ::: "memory");
+	Tlc5941_dcUpdateFlag = 1;
+}
 static inline void Tlc5941_SetGSUpdateFlag(void) {
 	__asm__ volatile ("" ::: "memory");
 	Tlc5941_gsUpdateFlag = 1;
