@@ -124,7 +124,19 @@ void Tlc5941_SetGS(Tlc5941_channel_t channel, uint16_t value) {
 void Tlc5941_ClockInDC(void) {
 	// Change programming mode
 	Tlc5941_setHigh(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
-	_delay_us (1);
+
+	// Write dummy empty byte
+	#if Tlc5941_USART_SPI == 0 // Use SPI module
+		// Start transmission
+		SPDR = 0;
+		// Wait for transmission complete
+		while (!(SPSR & (1 << SPIF)));
+	#else // Use USART in SPI mode
+		// Start transmission
+		UDR0 = 0;
+		// Wait for transmission complete
+		while (!(UCSR0A & (1 << UDRE0)));
+	#endif
 
 	// Perform data transmission
 	for (Tlc5941_dcData_t i = 0; i < Tlc5941_dcDataSize; i++) {
@@ -140,10 +152,8 @@ void Tlc5941_ClockInDC(void) {
 			while (!(UCSR0A & (1 << UDRE0)));
 		#endif
 	}
-	//Tlc5941_pulse(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
-	Tlc5941_setHigh(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
-	_delay_us (10);
-	Tlc5941_setLow(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
+
+	Tlc5941_pulse(Tlc5941_XLAT_PORT, Tlc5941_XLAT_PIN);
 }
 
 void Tlc5941_SetAllDC(uint8_t value) {
@@ -216,6 +226,19 @@ ISR(TIMER2_COMPA_vect) {
 	if (Tlc5941_dcUpdateFlag) {
 		// Change mode to DC
 		Tlc5941_setHigh(Tlc5941_MODE_PORT, Tlc5941_MODE_PIN);
+
+		// Write dummy empty byte
+		#if Tlc5941_USART_SPI == 0 // Use SPI module
+			// Start transmission
+			SPDR = 0;
+			// Wait for transmission complete
+			while (!(SPSR & (1 << SPIF)));
+		#else // Use USART in SPI mode
+			// Start transmission
+			UDR0 = 0;
+			// Wait for transmission complete
+			while (!(UCSR0A & (1 << UDRE0)));
+		#endif
 
 		// Perform data transmission
 		for (Tlc5941_dcData_t i = 0; i < Tlc5941_dcDataSize; i++) {
